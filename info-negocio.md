@@ -2,14 +2,14 @@
 
 ## Productos y precios
 
-- Pastel de chocolate: chico (8 a 10 personas) $380, mediano (15 a 20) $620
-- Cupcakes: caja de 6 $210
+- Coca-Cola: 600 ml $22, 2 litros $45
+- Paquete de latas: caja de 12 (355 ml) $210
 
 ## Pedidos
 
-- Personalizados: 48 horas de anticipación
+- Mayoreo: 48 horas de anticipación
 - Anticipo: 50 %
 
 ## Políticas
 
-- No tenemos opciones sin gluten ni veganas
+- No manejamos productos de otras marcas
