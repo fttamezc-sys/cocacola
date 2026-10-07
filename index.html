@@ -76,6 +76,34 @@ h2{font-size:1.875rem;font-weight:700;text-align:center}
 .info .val{margin-top:.25rem}
 .info a:hover{text-decoration:underline}
 .copyright{border-top:1px solid rgba(255,255,255,.2);padding:1.5rem 0;text-align:center;font-size:.875rem;opacity:.8}
+/* chat Chispa */
+.cb-btn{position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));z-index:40;display:inline-flex;align-items:center;gap:.5rem;min-height:48px;border:0;border-radius:999px;background:var(--cta);color:#fff;font:inherit;font-weight:700;font-size:1rem;padding:.75rem 1.25rem;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;transition:background .2s}
+.cb-btn:hover{background:var(--primary)}
+.cb-btn svg{width:20px;height:20px;fill:currentColor}
+.cb-btn[aria-expanded="true"]{display:none}
+.cb-panel{position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));z-index:41;display:flex;flex-direction:column;width:min(24rem,calc(100vw - 2rem));height:min(36rem,calc(100dvh - 2rem));overflow:hidden;border:1px solid var(--border);border-radius:1rem;background:var(--card);box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.cb-panel[hidden]{display:none}
+@media(max-width:480px){.cb-panel{right:0;bottom:0;width:100%;height:100dvh;border:0;border-radius:0}}
+.cb-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 1rem;background:var(--primary);color:var(--primary-fg)}
+.cb-title{font-weight:700;line-height:1.2}
+.cb-title small{display:block;font-size:.8125rem;font-weight:400;opacity:.9}
+.cb-close{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:1.5rem;line-height:1;cursor:pointer}
+.cb-close:hover{background:rgba(255,255,255,.15)}
+.cb-log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;padding:1rem;background:var(--bg)}
+.cb-msg{max-width:85%;padding:.5rem .875rem;border-radius:1rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.cb-msg a{text-decoration:underline}
+.cb-bot{align-self:flex-start;border:1px solid var(--border);background:var(--card);border-bottom-left-radius:.25rem}
+.cb-user{align-self:flex-end;background:var(--primary);color:var(--primary-fg);border-bottom-right-radius:.25rem}
+.cb-typing{color:var(--muted-fg);font-style:italic}
+.cb-sugs{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem}
+.cb-sug{border:1px solid var(--brand-secondary);border-radius:999px;background:var(--card);color:var(--brand-secondary);font:inherit;font-size:.875rem;font-weight:600;padding:.375rem .875rem;text-align:left;cursor:pointer}
+.cb-sug:hover{background:var(--alt);color:var(--fg)}
+.cb-form{display:flex;gap:.5rem;padding:.75rem;border-top:1px solid var(--border);background:var(--card)}
+.cb-input{flex:1;min-width:0;min-height:44px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--fg);font:inherit;font-size:1rem;padding:.5rem 1rem}
+.cb-input:focus{outline:2px solid var(--primary);outline-offset:1px}
+.cb-send{min-height:44px;border:0;border-radius:999px;background:var(--cta);color:#fff;font:inherit;font-weight:700;padding:.5rem 1rem;cursor:pointer}
+.cb-send:hover{background:var(--primary)}
+.cb-send:disabled,.cb-input:disabled{opacity:.6;cursor:default}
 </style>
 </head>
 <body>
@@ -161,6 +189,144 @@ h2{font-size:1.875rem;font-weight:700;text-align:center}
   var y = new Date().getFullYear();
   var el = document.getElementById('anio');
   if (el) el.textContent = y;
+})();
+</script>
+<button class="cb-btn" id="cb-btn" type="button" aria-controls="cb-panel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8l-4.5 3.6A.9.9 0 0 1 2 20.9V5a2 2 0 0 1 2-2Z"/></svg>¿Dudas? Pregúntanos</button>
+<div class="cb-panel" id="cb-panel" role="dialog" aria-label="Chat con Chispa" hidden>
+  <div class="cb-head">
+    <p class="cb-title">Chispa 🥤<small>Asistente virtual · te responde al momento</small></p>
+    <button class="cb-close" id="cb-close" type="button" aria-label="Cerrar chat">×</button>
+  </div>
+  <div class="cb-log" id="cb-log" aria-live="polite"></div>
+  <form class="cb-form" id="cb-form">
+    <input class="cb-input" id="cb-input" type="text" maxlength="1000" autocomplete="off" placeholder="Escribe tu pregunta…" aria-label="Escribe tu pregunta">
+    <button class="cb-send" id="cb-send" type="submit">Enviar</button>
+  </form>
+</div>
+<script>
+(function () {
+  var ERROR_MSG = 'En este momento no puedo responder. Escríbenos por WhatsApp al 81 2378 8676.';
+  var GREETING = '¡Hola! Soy Chispa 🥤 ¿En qué te ayudo hoy?';
+  var SUGGESTIONS = [
+    '¿Cuánto cuesta la Coca-Cola de 2 litros?',
+    '¿Qué me recomiendas para una fiesta?',
+    '¿Cómo hago un pedido de mayoreo?'
+  ];
+
+  var btn = document.getElementById('cb-btn');
+  var panel = document.getElementById('cb-panel');
+  var closeBtn = document.getElementById('cb-close');
+  var log = document.getElementById('cb-log');
+  var form = document.getElementById('cb-form');
+  var input = document.getElementById('cb-input');
+  var send = document.getElementById('cb-send');
+  var history = [];
+  var busy = false;
+  var started = false;
+  var sugs;
+
+  // Escribe el texto de forma segura y convierte en enlace solo los de WhatsApp.
+  function addMessage(text, who) {
+    var el = document.createElement('div');
+    el.className = 'cb-msg ' + (who === 'user' ? 'cb-user' : 'cb-bot');
+    var parts = String(text).split(/(https:\/\/wa\.me\/\d+)/);
+    for (var i = 0; i < parts.length; i++) {
+      if (i % 2) {
+        var a = document.createElement('a');
+        a.href = parts[i];
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = 'WhatsApp';
+        el.appendChild(a);
+      } else if (parts[i]) {
+        el.appendChild(document.createTextNode(parts[i]));
+      }
+    }
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return el;
+  }
+
+  function start() {
+    started = true;
+    addMessage(GREETING, 'bot');
+    sugs = document.createElement('div');
+    sugs.className = 'cb-sugs';
+    SUGGESTIONS.forEach(function (q) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cb-sug';
+      b.textContent = q;
+      b.addEventListener('click', function () { ask(q); });
+      sugs.appendChild(b);
+    });
+    log.appendChild(sugs);
+  }
+
+  function setBusy(value) {
+    busy = value;
+    input.disabled = value;
+    send.disabled = value;
+  }
+
+  function ask(text) {
+    text = text.trim();
+    if (!text || busy) return;
+    if (sugs) { sugs.remove(); sugs = null; }
+    addMessage(text, 'user');
+    history.push({ role: 'user', text: text });
+    input.value = '';
+    setBusy(true);
+    var typing = addMessage('Chispa está escribiendo…', 'bot');
+    typing.classList.add('cb-typing');
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history.slice(-30) })
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || typeof data.reply !== 'string' || !data.reply.trim()) throw new Error('Sin respuesta');
+        typing.remove();
+        history.push({ role: 'model', text: data.reply });
+        addMessage(data.reply, 'bot');
+      })
+      .catch(function () {
+        typing.remove();
+        // El mensaje sin respuesta sale del historial para no confundir al modelo.
+        history.pop();
+        addMessage(ERROR_MSG, 'bot');
+      })
+      .then(function () {
+        setBusy(false);
+        input.focus();
+      });
+  }
+
+  function open() {
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    if (!started) start();
+    input.focus();
+  }
+
+  function close() {
+    panel.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.focus();
+  }
+
+  btn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  panel.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    ask(input.value);
+  });
 })();
 </script>
 </body>
