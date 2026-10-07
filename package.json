@@ -1,0 +1,13 @@
+{
+  "name": "chispa-cocacola",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Página con el chat de Chispa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
